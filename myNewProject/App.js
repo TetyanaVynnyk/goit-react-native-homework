@@ -1,36 +1,10 @@
-import { StatusBar  } from 'expo-status-bar';
-import { StyleSheet, ImageBackground, View, TouchableWithoutFeedback, Keyboard } from 'react-native';
-import React, { useState } from "react";
-import RegistrationScreen from './Screens/RegistrationScreen';
-import LoginScreen from './Screens/LoginScreen';
+import React from "react";
 
-const backImage = require('./assets/images/Photo_BG.png');
+import { NavigationContainer } from "@react-navigation/native";
+import { useRoute } from "./Routes/useRoute";
 
 export default function App() {
+  const routing = useRoute(true);
 
-   const [activeScreen, setActiveScreen] = useState(0);
-   const changeScrennFunc = (value) => { setActiveScreen (value) }
-
-  return (
-  <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-    <View style={styles.maincontainer}>
-      <ImageBackground source={backImage} style={styles.backImg} >
-        { activeScreen=== 0 ? <LoginScreen changeScrenn={ changeScrennFunc }/> :
-         <RegistrationScreen changeScrenn={ changeScrennFunc }/>}
-        </ImageBackground>
-        <StatusBar style="auto" />  
-    </View>
-  </TouchableWithoutFeedback>);
+  return <NavigationContainer>{routing}</NavigationContainer>;
 }
-
-const styles = StyleSheet.create({
-  maincontainer: {
-    flex: 1,
-    alignItems: 'center',
-  }, 
-  backImg: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    width: '100%'
-  },
-});
