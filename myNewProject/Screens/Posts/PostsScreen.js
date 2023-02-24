@@ -8,7 +8,7 @@ import {
   Image,
   Text,
   Dimensions,
-  FlatList,
+  FlatList
 } from "react-native";
 import Message from "../../assets/images/message.svg";
 import Like from "../../assets/images/like.svg";
@@ -41,7 +41,7 @@ const POSTS = [
   },
 ];
 
-const PostsScreen = ({ navigation }) => {
+export const PostsScreen = ({ route, navigation }) => {
   const [fontsLoaded] = useFonts({
     Roboto: require("../../assets/fonts/Roboto-Regular.ttf"),
     RobotoMedium: require("../../assets/fonts/Roboto-Medium.ttf"),
@@ -52,7 +52,9 @@ const PostsScreen = ({ navigation }) => {
     Dimensions.get("window").width
   );
 
+  
   const [posts, setPosts] = useState(POSTS);
+
 
   useEffect(() => {
     const onChange = () => {
@@ -132,14 +134,14 @@ const PostsScreen = ({ navigation }) => {
                   <Text style={styles.cardText}>{item.comments}</Text>
                 </TouchableOpacity>
                 <View style={{ ...styles.wrapper, marginLeft: 24 }}>
-                <Image source={{uri: Like}} />
+                  <Image source={{uri: Like}} />
                   <Text style={styles.cardText}>{item.likes}</Text>
                 </View>
               </View>
-              <View style={styles.wrapper}>
-              <Image source={{uri: Location}} />
+              <TouchableOpacity style={styles.wrapper} onPress={() => navigation.navigate('Map')}>
+                <Image source={{uri: Location}} />
                 <Text style={styles.cardText}>{item.location}</Text>
-              </View>
+              </TouchableOpacity>
             </View>
           </View>
         )}
@@ -152,8 +154,6 @@ const PostsScreen = ({ navigation }) => {
     </View>
   );
 };
-
-export default PostsScreen;
 
 const styles = StyleSheet.create({
   

@@ -13,6 +13,7 @@ import {
   Keyboard,
   ImageBackground,
   Dimensions,
+  Image
 } from "react-native";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
@@ -129,7 +130,7 @@ export const RegistrationScreen = ({navigation}) => {
                     left: windowWidth / 2 + 47.5,
                   }}
                 >
-                  <Add />
+                  <Image source={{uri: Add}} />
                 </TouchableOpacity>
                 <View style={{ width: windowWidth - 16 * 2 }}>
                   <Text style={{ ...styles.title, fontFamily: "RobotoMedium" }}>

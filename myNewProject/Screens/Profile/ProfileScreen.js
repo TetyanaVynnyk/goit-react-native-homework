@@ -9,7 +9,7 @@ import {
   Image,
   Text,
   ImageBackground,
-  Dimensions,
+  Dimensions
 } from "react-native";
 
 import Message from "../../assets/images/message.svg";
@@ -18,7 +18,7 @@ import Location from "../../assets/images/location.svg";
 
 const POSTS = [
   {
-    id: 1,
+    id: 4,
     postImage: require("../../assets/images/forrest.jpg"),
     title: "Forrest",
     location: "Ukraine",
@@ -26,7 +26,7 @@ const POSTS = [
     likes: 153,
   },
   {
-    id: 2,
+    id: 5,
     postImage: require("../../assets/images/sunset.jpg"),
     title: "Sunset on the Black Sea",
     location: "Ukraine",
@@ -34,7 +34,7 @@ const POSTS = [
     likes: 200,
   },
   {
-    id: 3,
+    id: 6,
     postImage: require("../../assets/images/oldhouse.jpg"),
     title: "Old house in Venice",
     location: "Italy",
@@ -43,7 +43,7 @@ const POSTS = [
   },
 ];
 
-const ProfileScreen = ({ navigation }) => {
+export const ProfileScreen = ({ navigation }) => {
   const [fontsLoaded] = useFonts({
     Roboto: require("../../assets/fonts/Roboto-Regular.ttf"),
     RobotoMedium: require("../../assets/fonts/Roboto-Medium.ttf"),
@@ -114,7 +114,7 @@ const ProfileScreen = ({ navigation }) => {
               >
                 <Image
                   style={styles.avatarImage}
-                  source={require("../../assets/images/PhotoBG.jpeg")}
+                  source={require("../../assets/images/userAvatarLarge.jpg")}
                 />
               </View>
               <View
@@ -175,10 +175,10 @@ const ProfileScreen = ({ navigation }) => {
                     <Text style={styles.cardText}>{item.likes}</Text>
                   </View>
                 </View>
-                <View style={styles.cardWrapper}>
+                <TouchableOpacity style={styles.cardWrapper} onPress={() => navigation.navigate('Map')}>
                   <Image source={{uri: Location}} />
                   <Text style={styles.cardText}>{item.location}</Text>
-                </View>
+                </TouchableOpacity>
               </View>
             </View>
           )}
@@ -196,8 +196,6 @@ const ProfileScreen = ({ navigation }) => {
     </View>
   );
 };
-
-export default ProfileScreen;
 
 const styles = StyleSheet.create({
   container: {

@@ -8,7 +8,6 @@ import {
   Text,
   Dimensions,
   FlatList,
-  ScrollView,
   TouchableOpacity,
   Alert,
   Keyboard,

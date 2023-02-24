@@ -1,89 +1,63 @@
 import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 
-import {RegistrationScreen} from "../Screens/Auth/RegistrationScreen"
-import {LoginScreen} from "../Screens/Auth/LoginScreen";
-import PostsScreen from "../Screens/Posts/PostsScreen";
-import CreatePostsScreen from "../Screens/Posts/CreatePostsScreen";
-import ProfileScreen from "../Screens/Profile/ProfileScreen";
-
-// icons import
-import { Ionicons } from "@expo/vector-icons";
-import { AntDesign } from "@expo/vector-icons";
-import { Feather } from "@expo/vector-icons";
+import { HomeScreen } from "../Screens/Home/HomeScreen";
+import { RegistrationScreen } from "../Screens/Auth/RegistrationScreen";
+import { LoginScreen } from "../Screens/Auth/LoginScreen";
+import {CreatePostsScreen} from '../Screens/Posts/CreatePostsScreen';
+import { CommentsScreen } from "../Screens/Comments/CommentsScreen";
+import { MapScreen } from "../Screens/Map/MapScreen";
+import { CameraScreen } from "../Screens/Camera/CameraScreen";
 
 const AuthStack = createStackNavigator();
-const MainTab = createBottomTabNavigator();
+const MainStack = createStackNavigator();
 
-export const useRoute = (isAuth) => {
-  if (!isAuth) {
-    return (
-      <AuthStack.Navigator>
-        <AuthStack.Screen
-          options={{ headerShown: false }}
-          name="Registration"
-          component={RegistrationScreen}
-        />
-        <AuthStack.Screen
-          options={{ headerShown: false }}
-          name="Login"
-          component={LoginScreen}
-        />
-      </AuthStack.Navigator>
-    );
-  }
-  return (
-    <MainTab.Navigator
-      screenOptions={{
-        tabBarShowLabel: false,
-        tabBarActiveTintColor: "#FFFFFF",
-        tabBarActiveBackgroundColor: "#FF6C00",
-        tabBarInactiveTintColor: "#212121",
-        tabBarItemStyle: {
-          borderRadius: 20,
-          marginTop: 4,
-          marginBottom: 4,
-          maxWidth: 70,
-          margin: 8,
-        },
-        tabBarStyle: {
-          justifyContent: "space-between",
-          alignItems: "center",
-        },
-      }}
-    >
-      <MainTab.Screen
-        name="PostsScreen"
-        component={PostsScreen}
+export const useRoute = (isLogin) => {
+  return isLogin ? (
+    <MainStack.Navigator initialRouteName="Home">
+      <MainStack.Screen
+        options={{ headerShown: false }}
+        name="Home"
+        component={HomeScreen}
+      ></MainStack.Screen>
+      <MainStack.Screen
         options={{
-          headerShown: false,
-          tabBarIcon: ({ focused, color, size }) => {
-            return 
-              <Ionicons name="ios-grid-outline" size={size} color={color} />
-          },
+          headerShown: true,
+          headerTitleStyle: { color: "#212121", fontSize: 17 },
+          headerTitleAlign: "center",
         }}
-      />
-      <MainTab.Screen
-        name="CreatePostsScreen"
+        name="Comments"
+        component={CommentsScreen}
+      ></MainStack.Screen>
+      <MainStack.Screen
+        options={{ headerShown: true }}
+        name="Create Post"
         component={CreatePostsScreen}
-        options={{
-          // headerShown: false,
-          tabBarIcon: ({ focused, color, size }) => {
-            return <AntDesign name="plus" size={24} color={color} />;
-          },
-        }}
-      />
-      <MainTab.Screen
-        name="ProfileScreen"
-        component={ProfileScreen}
-        options={{
-          // headerShown: false,
-          tabBarIcon: ({ focused, color, size }) => {
-            return <Feather name="user" size={24} color={color} />;
-          },
-        }}
-      />
-    </MainTab.Navigator>
+      ></MainStack.Screen>
+      <MainStack.Screen
+        options={{ headerShown: true }}
+        name="Camera"
+        component={CameraScreen}
+      ></MainStack.Screen>
+      <MainStack.Screen
+        options={{ headerShown: true }}
+        name="Map"
+        component={MapScreen}
+      ></MainStack.Screen>
+    </MainStack.Navigator>
+  ) : (
+    <AuthStack.Navigator initialRouteName="Login">
+      <AuthStack.Screen
+        options={{ headerShown: false }}
+        name="Registration"
+        component={RegistrationScreen}
+      ></AuthStack.Screen>
+      <AuthStack.Screen
+        options={{ headerShown: false }}
+        name="Login"
+        component={LoginScreen}
+      ></AuthStack.Screen>
+    </AuthStack.Navigator>
   );
 };
+
