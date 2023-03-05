@@ -3,41 +3,60 @@ import { Camera } from "expo-camera";
 import { shareAsync } from "expo-sharing";
 import * as MediaLibrary from "expo-media-library";
 import * as Location from "expo-location";
-import { StyleSheet, Image, Text, View, TouchableOpacity, Alert } from "react-native";
+import {
+  StyleSheet,
+  Image,
+  Text,
+  View,
+  TouchableOpacity,
+  Alert,
+} from "react-native";
 
 import DownloadPhoto from "../../assets/images/downloadPhoto.svg";
 
 export const CameraScreen = ({ navigation }) => {
   const [location, setLocation] = useState(null);
+  const [regionName, setRegionName] = useState(null);
+  const [photo, setPhoto] = useState();
 
   const cameraRef = useRef();
   const [hasCameraPermission, setHasCameraPermission] = useState();
   const [hasMediaLibraryPermission, setHasMediaLibraryPermission] = useState();
-  const [photo, setPhoto] = useState();
 
   useEffect(() => {
     (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert("Permission to access location was denied");
-      }
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          Alert.alert("Permission to access location was denied");
+        }
 
-      const location = await Location.getCurrentPositionAsync({});
-      const coords = {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      };
-      setLocation(coords);
+        const location = await Location.getCurrentPositionAsync({});
+        const regionName = await Location.reverseGeocodeAsync({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+        setLocation(location.coords);
+        setRegionName(regionName);
+      } catch (error) {
+        console.log("error-message", error.message);
+      }
     })();
   }, []);
 
   useEffect(() => {
     (async () => {
-      const cameraPermission = await Camera.requestCameraPermissionsAsync();
-      const mediaLibraryPermission =
-        await MediaLibrary.requestPermissionsAsync();
-      setHasCameraPermission(cameraPermission.status === "granted");
-      setHasMediaLibraryPermission(mediaLibraryPermission.status === "granted");
+      try {
+        const cameraPermission = await Camera.requestCameraPermissionsAsync();
+        const mediaLibraryPermission =
+          await MediaLibrary.requestPermissionsAsync();
+        setHasCameraPermission(cameraPermission.status === "granted");
+        setHasMediaLibraryPermission(
+          mediaLibraryPermission.status === "granted"
+        );
+      } catch (error) {
+        console.log("error-message", error.message);
+      }
     })();
   }, []);
 
@@ -50,8 +69,12 @@ export const CameraScreen = ({ navigation }) => {
   }
 
   const takePic = async () => {
-    const newPhoto = await cameraRef.current.takePictureAsync();
-    setPhoto(newPhoto.uri);
+    try {
+      const newPhoto = await cameraRef.current.takePictureAsync();
+      setPhoto(newPhoto.uri);
+    } catch (error) {
+      console.log("error-message-take-pic", error.message);
+    }
   };
 
   if (photo) {
@@ -62,13 +85,12 @@ export const CameraScreen = ({ navigation }) => {
     };
 
     const savePic = () => {
-      //save to phone's gallery
-      //   MediaLibrary.saveToLibraryAsync(photo.uri).then(() => {
-      //     setPhoto(undefined);
-      //   });
-      navigation.navigate("Create Post", { photo, location });
-      setTimeout(() => {setPhoto(undefined); setLocation(null)}, 400);
-        };
+      navigation.navigate("Create Post", { photo, location, regionName });
+      setTimeout(() => {
+        setPhoto(undefined);
+        setLocation(null);
+      }, 400);
+    };
 
     return (
       <View style={styles.container}>
@@ -110,7 +132,7 @@ export const CameraScreen = ({ navigation }) => {
           }}
           onPress={takePic}
         >
-          <Image source={{uri: DownloadPhoto}} />
+          <DownloadPhoto />
         </TouchableOpacity>
       </Camera>
     </View>
@@ -120,6 +142,7 @@ export const CameraScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   camera: {
     flex: 1,
+    height: "100%",
     alignItems: "center",
     justifyContent: "flex-end",
   },

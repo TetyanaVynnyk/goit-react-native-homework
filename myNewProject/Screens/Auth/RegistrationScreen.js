@@ -13,18 +13,31 @@ import {
   Keyboard,
   ImageBackground,
   Dimensions,
-  Image
+  Image,
 } from "react-native";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
-import Add from "../../assets/images/add.png";
+import { useDispatch } from "react-redux";
 
-export const RegistrationScreen = ({navigation}) => {
+import * as ImagePicker from "expo-image-picker";
+
+import uuid from "react-native-uuid";
+
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+
+import Add from "../../assets/images/add.png";
+import Delete from "../../assets/images/delete.svg";
+
+import { authSignUpUser } from "../../redux/auth/authOperations";
+
+export const RegistrationScreen = ({ navigation }) => {
   const [fontsLoaded] = useFonts({
     Roboto: require("../../assets/fonts/Roboto-Regular.ttf"),
     RobotoMedium: require("../../assets/fonts/Roboto-Medium.ttf"),
     RobotoBold: require("../../assets/fonts/Roboto-Bold.ttf"),
   });
+
+  const [pickedImagePath, setPickedImagePath] = useState("");
 
   const [login, setLogin] = useState("");
   const [email, setEmail] = useState("");
@@ -43,6 +56,35 @@ export const RegistrationScreen = ({navigation}) => {
 
   const [isPasswordHidden, setIsPasswordHidden] = useState(true);
 
+  const dispatch = useDispatch();
+
+  const downloadAvatar = async () => {
+    try {
+      const permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (permissionResult.granted === false) {
+        alert("You've refused to allow this appp to access your photos!");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
+
+      if (!result.canceled) {
+        setPickedImagePath(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.log("error-message", error.message);
+    }
+  };
+
+  const deleteAvatar = () => setPickedImagePath("");
+
   useEffect(() => {
     const onChange = () => {
       const width = Dimensions.get("window").width;
@@ -59,17 +101,46 @@ export const RegistrationScreen = ({navigation}) => {
   const emailHandler = (email) => setEmail(email);
   const passwordHandler = (password) => setPassword(password);
 
-  const onLogin = () => {
-    if (!login.trim() || !email.trim() || !password.trim()) {
-      Alert.alert(`All fields must be completed!`);
-      return;
+  const uploadPhotoToServer = async () => {
+    try {
+      const response = await fetch(pickedImagePath);
+      const file = await response.blob();
+      const uniquePostId = uuid.v4();
+      const storage = getStorage();
+      const storageRef = ref(storage, `avatarImage/${uniquePostId}`);
+
+      await uploadBytes(storageRef, file);
+
+      const photoRef = await getDownloadURL(storageRef);
+      return photoRef;
+    } catch (error) {
+      console.log("error-message.upoload-photo", error.message);
     }
-    Alert.alert(`Welcome ${login}, your registration is successfull!`);
-    console.log(login, email, password);
-    setLogin("");
-    setEmail("");
-    setPassword("");
-    Keyboard.dismiss();
+  };
+
+  const onSignup = async () => {
+    try {
+      if (!login.trim() || !email.trim() || !password.trim() || !pickedImagePath.trim()) {
+        Alert.alert(`All fields must be completed!`);
+        return;
+      }
+      
+      const imageRef = await uploadPhotoToServer();
+      const newUser = {
+        avatarImage: imageRef,
+        login,
+        email,
+        password,
+      };
+      dispatch(authSignUpUser(newUser));
+      setLogin("");
+      setEmail("");
+      setPassword("");
+      setPickedImagePath("");
+      Keyboard.dismiss();
+    } catch (error) {
+      Alert.alert(error.message);
+    }
   };
 
   const keyboardHide = () => {
@@ -118,20 +189,48 @@ export const RegistrationScreen = ({navigation}) => {
                   marginTop: windowWidth > 500 ? 100 : 263,
                 }}
               >
-                <View
-                  style={{
-                    ...styles.imageThumb,
-                    left: (windowWidth - 120) / 2,
-                  }}
-                ></View>
-                <TouchableOpacity
-                  style={{
-                    ...styles.addButton,
-                    left: windowWidth / 2 + 47.5,
-                  }}
-                >
-                  <Image source={{uri: Add}} />
-                </TouchableOpacity>
+                {pickedImagePath ? (
+                  <>
+                    <View
+                      style={{
+                        ...styles.imageThumb,
+                        left: (windowWidth - 120) / 2,
+                      }}
+                    >
+                      <Image
+                        style={styles.avatarImage}
+                        source={{ uri: pickedImagePath }}
+                      />
+                    </View>
+                    <TouchableOpacity
+                      onPress={deleteAvatar}
+                      style={{
+                        ...styles.addButton,
+                        left: windowWidth / 2 + 47.5,
+                      }}
+                    >
+                      <Delete />
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <>
+                    <View
+                      style={{
+                        ...styles.imageThumb,
+                        left: (windowWidth - 120) / 2,
+                      }}
+                    ></View>
+                    <TouchableOpacity
+                      onPress={downloadAvatar}
+                      style={{
+                        ...styles.addButton,
+                        left: windowWidth / 2 + 47.5,
+                      }}
+                    >
+                      <Add />
+                    </TouchableOpacity>
+                  </>
+                )}
                 <View style={{ width: windowWidth - 16 * 2 }}>
                   <Text style={{ ...styles.title, fontFamily: "RobotoMedium" }}>
                     Registration
@@ -146,7 +245,7 @@ export const RegistrationScreen = ({navigation}) => {
                     onBlur={() => setIsFocusedLogin(false)}
                     value={login}
                     placeholder="Login"
-                    textContentType={'emailAddress'}
+                    textContentType={"emailAddress"}
                     cursorColor={"#BDBDBD"}
                     placeholderTextColor={"#BDBDBD"}
                     onChangeText={loginHandler}
@@ -161,7 +260,7 @@ export const RegistrationScreen = ({navigation}) => {
                     onBlur={() => setIsFocusedEmail(false)}
                     value={email}
                     placeholder="Email"
-                    textContentType={'emailAddress'}
+                    textContentType={"emailAddress"}
                     cursorColor={"#BDBDBD"}
                     placeholderTextColor={"#BDBDBD"}
                     onChangeText={emailHandler}
@@ -176,7 +275,7 @@ export const RegistrationScreen = ({navigation}) => {
                     onFocus={() => setIsFocusedPassword(true)}
                     onBlur={() => setIsFocusedPassword(false)}
                     value={password}
-                    textContentType={'password'}
+                    textContentType={"password"}
                     placeholder="Password"
                     cursorColor={"#BDBDBD"}
                     placeholderTextColor={"#BDBDBD"}
@@ -198,14 +297,16 @@ export const RegistrationScreen = ({navigation}) => {
                       {isPasswordHidden ? "Show" : "Hide"}
                     </Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.button} onPress={onLogin}>
+                  <TouchableOpacity style={styles.button} onPress={onSignup}>
                     <Text
                       style={{ ...styles.textButton, fontFamily: "Roboto" }}
                     >
                       Sign Up
                     </Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate("Login")}
+                  >
                     <Text style={{ ...styles.link, fontFamily: "Roboto" }}>
                       Have already an account? Sign in
                     </Text>
@@ -243,6 +344,12 @@ const styles = StyleSheet.create({
     height: 120,
     backgroundColor: "#F6F6F6",
     borderRadius: 16,
+  },
+  avatarImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 16,
+    resizeMode: "cover",
   },
   addButton: {
     position: "absolute",

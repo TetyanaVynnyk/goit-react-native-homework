@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useSelector } from "react-redux";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import {
@@ -8,38 +9,21 @@ import {
   Image,
   Text,
   Dimensions,
-  FlatList
+  FlatList,
 } from "react-native";
+
+import {
+  collection,
+  query,
+  doc,
+  onSnapshot,
+  updateDoc,
+} from "firebase/firestore";
+import { firestore } from "../../firebase/config";
+
 import Message from "../../assets/images/message.svg";
 import Like from "../../assets/images/like.svg";
 import Location from "../../assets/images/location.svg";
-
-const POSTS = [
-  {
-    id: 1,
-    postImage: require("../../assets/images/forrest.jpg"),
-    title: "Forrest",
-    location: "Ukraine",
-    comments: 8,
-    likes: 153,
-  },
-  {
-    id: 2,
-    postImage: require("../../assets/images/sunset.jpg"),
-    title: "Sunset on the Black Sea",
-    location: "Ukraine",
-    comments: 3,
-    likes: 200,
-  },
-  {
-    id: 3,
-    postImage: require("../../assets/images/oldhouse.jpg"),
-    title: "Old house in Venice",
-    location: "Italy",
-    comments: 50,
-    likes: 200,
-  },
-];
 
 export const PostsScreen = ({ route, navigation }) => {
   const [fontsLoaded] = useFonts({
@@ -52,9 +36,44 @@ export const PostsScreen = ({ route, navigation }) => {
     Dimensions.get("window").width
   );
 
-  
-  const [posts, setPosts] = useState(POSTS);
+  const { login, email, avatarImage } = useSelector((state) => state.auth);
 
+  const [posts, setPosts] = useState([]);
+
+  const addLike = async (postId, likesQuantity) => {
+    try {
+      const postDocRef = doc(firestore, "posts", postId);
+      await updateDoc(postDocRef, {
+        likesQuantity: likesQuantity + 1,
+        likeStatus: true,
+      });
+    } catch (error) {
+      console.log("error-message.add-like", error.message);
+    }
+  };
+
+  const removeLike = async (postId, likesQuantity) => {
+    try {
+      const postDocRef = doc(firestore, "posts", postId);
+      await updateDoc(postDocRef, {
+        likesQuantity: likesQuantity - 1,
+        likeStatus: false,
+      });
+    } catch (error) {
+      console.log("error-message.add-like", error.message);
+    }
+  };
+
+  const getAllPosts = async () => {
+    try {
+      const ref = query(collection(firestore, "posts"));
+      onSnapshot(ref, (snapshot) => {
+        setPosts(snapshot.docs.map((doc) => ({ ...doc.data(), id: doc.id })));
+      });
+    } catch (error) {
+      console.log("error-message.get-posts", error.message);
+    }
+  };
 
   useEffect(() => {
     const onChange = () => {
@@ -64,6 +83,10 @@ export const PostsScreen = ({ route, navigation }) => {
     const dimensionsHandler = Dimensions.addEventListener("change", onChange);
 
     return () => dimensionsHandler.remove();
+  }, []);
+
+  useEffect(() => {
+    getAllPosts();
   }, []);
 
   useEffect(() => {
@@ -88,34 +111,52 @@ export const PostsScreen = ({ route, navigation }) => {
       style={{ backgroundColor: "#FFFFFF", alignItems: "center" }}
     >
       <FlatList
+        ListEmptyComponent={
+          <View
+            style={{
+              flex: 1,
+              justifyContent: "center",
+              alignItems: "center",
+              padding: 16,
+              height: 240,
+              width: windowWidth - 16 * 2,
+            }}
+          >
+            <Text style={{ ...styles.textUserName, fontSize: 16 }}>
+              No posts yet
+            </Text>
+          </View>
+        }
         ListHeaderComponent={
-          <View style={styles.userSection}>
-            <Image
-              style={styles.avatarImage}
-              source={require("../../assets/images/userAvatar.jpg")}
-            />
+          <View style={{ ...styles.userSection, width: windowWidth - 16 * 2 }}>
+            <Image style={styles.avatarImage} source={{ uri: avatarImage }} />
             <View style={styles.userInfo}>
               <Text
                 style={{ ...styles.textUserName, fontFamily: "RobotoBold" }}
               >
-                Natali Romanova
+                {login}
               </Text>
               <Text style={{ ...styles.textUserEmail, fontFamily: "Roboto" }}>
-                email@example.com
+                {email}
               </Text>
             </View>
           </View>
         }
         data={posts}
+        keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View style={{ ...styles.cardContainer }}>
-            <Image
-              source={item.postImage}
-              style={{
-                ...styles.cardImage,
-                width: windowWidth - 16 * 2,
-              }}
-            />
+          <View
+            style={{ ...styles.cardContainer, width: windowWidth - 16 * 2 }}
+          >
+            <View style={{ alignItems: "center" }}>
+              <Image
+                source={{ uri: item.photo }}
+                style={{
+                  ...styles.cardImage,
+                  width: windowWidth - 16 * 2,
+                }}
+              />
+            </View>
             <Text style={{ ...styles.cardTitle, fontFamily: "RobotoMedium" }}>
               {item.title}
             </Text>
@@ -128,24 +169,44 @@ export const PostsScreen = ({ route, navigation }) => {
               >
                 <TouchableOpacity
                   style={styles.wrapper}
-                  onPress={() => navigation.navigate("Comments")}
+                  onPress={() =>
+                    navigation.navigate("Comments", {
+                      postId: item.id,
+                      postPhoto: item.photo,
+                      commentsQuantity: item.commentsQuantity,
+                    })
+                  }
                 >
-                  <Image source={{uri: Message}} />
-                  <Text style={styles.cardText}>{item.comments}</Text>
+                  <Message
+                    fill={item.commentsQuantity === 0 ? "#BDBDBD" : "#FF6C00"}
+                  />
+                  <Text style={styles.cardText}>{item.commentsQuantity}</Text>
                 </TouchableOpacity>
-                <View style={{ ...styles.wrapper, marginLeft: 24 }}>
-                  <Image source={{uri: Like}} />
-                  <Text style={styles.cardText}>{item.likes}</Text>
-                </View>
+                <TouchableOpacity
+                  onPress={ item.likeStatus ? () => removeLike(item.id, item.likesQuantity, item.likeStatus) : () => addLike(item.id, item.likesQuantity, item.likeStatus)}
+                >
+                  <View style={{ ...styles.wrapper, marginLeft: 24 }}>
+                    <Like
+                      fill={!item.likeStatus ? "#BDBDBD" : "#FF6C00"}
+                    />
+                    <Text style={styles.cardText}>{item.likesQuantity}</Text>
+                  </View>
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity style={styles.wrapper} onPress={() => navigation.navigate('Map')}>
-                <Image source={{uri: Location}} />
-                <Text style={styles.cardText}>{item.location}</Text>
+              <TouchableOpacity
+                style={styles.wrapper}
+                onPress={() =>
+                  navigation.navigate("Map", { location: item.location })
+                }
+              >
+                <Location />
+                <Text style={styles.cardText}>
+                  {item.regionName[0].city}, {item.regionName[0].country}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
         )}
-        keyExtractor={(item) => item.id}
         contentContainerStyle={{
           flexGrow: 1,
         }}
@@ -156,12 +217,10 @@ export const PostsScreen = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  
   userSection: {
     marginVertical: 32,
     flexDirection: "row",
     alignItems: "center",
-    width: "100%",
   },
   avatarImage: {
     width: 60,
@@ -190,6 +249,7 @@ const styles = StyleSheet.create({
   },
   cardContainer: {},
   cardImage: {
+    height: 240,
     resizeMode: "cover",
     borderRadius: 8,
   },

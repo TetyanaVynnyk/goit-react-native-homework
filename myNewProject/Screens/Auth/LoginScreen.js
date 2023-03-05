@@ -16,6 +16,9 @@ import {
 } from "react-native";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
+import { useDispatch } from "react-redux";
+
+import { authSignInUser } from "../../redux/auth/authOperations";
 
 export const LoginScreen = ({navigation}) => {
   const [fontsLoaded] = useFonts({
@@ -39,6 +42,8 @@ export const LoginScreen = ({navigation}) => {
 
   const [isPasswordHidden, setIsPasswordHidden] = useState(true);
 
+  const dispatch = useDispatch();
+
   useEffect(() => {
     const onChange = () => {
       const width = Dimensions.get("window").width;
@@ -60,7 +65,12 @@ export const LoginScreen = ({navigation}) => {
       return;
     }
     Alert.alert(`Welcome, ${email}!`);
-    console.log(email, password);
+    const currentUser = {
+      email,
+      password,
+    }
+    console.log(currentUser);
+    dispatch(authSignInUser(currentUser));
     setEmail("");
     setPassword("");
     Keyboard.dismiss();
@@ -109,7 +119,7 @@ export const LoginScreen = ({navigation}) => {
                 style={{
                   ...styles.wrapper,
                   width: windowWidth,
-                  marginTop: windowWidth > 500 ? 100 : 263,
+                  marginTop: windowWidth > 500 ? 100 : 293,
                 }}
               >
 
@@ -225,7 +235,7 @@ const styles = StyleSheet.create({
   showPassword: {
     position: "absolute",
     right: 0,
-    bottom: 205,
+    bottom: 245,
     paddingRight: 16,
   },
   textShowPassword: {
@@ -249,7 +259,7 @@ const styles = StyleSheet.create({
   },
   link: {
     marginTop: 16,
-    marginBottom: 60,
+    marginBottom: 100,
     textAlign: "center",
     color: "#1B4371",
   },

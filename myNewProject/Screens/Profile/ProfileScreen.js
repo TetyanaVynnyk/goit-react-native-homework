@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useSelector, useDispatch } from "react-redux";
+
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import {
@@ -9,39 +11,18 @@ import {
   Image,
   Text,
   ImageBackground,
-  Dimensions
+  Dimensions,
 } from "react-native";
+
+import { collection, query, onSnapshot, where } from "firebase/firestore";
+import { firestore } from "../../firebase/config";
+
+import { authSignOutUser } from "../../redux/auth/authOperations";
 
 import Message from "../../assets/images/message.svg";
 import Like from "../../assets/images/like.svg";
 import Location from "../../assets/images/location.svg";
-
-const POSTS = [
-  {
-    id: 4,
-    postImage: require("../../assets/images/forrest.jpg"),
-    title: "Forrest",
-    location: "Ukraine",
-    comments: 8,
-    likes: 153,
-  },
-  {
-    id: 5,
-    postImage: require("../../assets/images/sunset.jpg"),
-    title: "Sunset on the Black Sea",
-    location: "Ukraine",
-    comments: 3,
-    likes: 200,
-  },
-  {
-    id: 6,
-    postImage: require("../../assets/images/oldhouse.jpg"),
-    title: "Old house in Venice",
-    location: "Italy",
-    comments: 50,
-    likes: 200,
-  },
-];
+import Logout from "../../assets/images/logout.svg";
 
 export const ProfileScreen = ({ navigation }) => {
   const [fontsLoaded] = useFonts({
@@ -57,7 +38,31 @@ export const ProfileScreen = ({ navigation }) => {
     Dimensions.get("window").height
   );
 
-  const [posts, setPosts] = useState(POSTS);
+  const [userPosts, setUserPosts] = useState([]);
+
+  const { login, userId, avatarImage } = useSelector((state) => state.auth);
+
+  const dispatch = useDispatch();
+
+  const getUserPosts = async () => {
+    try {
+      const ref = query(
+        collection(firestore, "posts"),
+        where("userId", "==", `${userId}`)
+      );
+      onSnapshot(ref, (snapshot) => {
+        setUserPosts(
+          snapshot.docs.map((doc) => ({ ...doc.data(), id: doc.id }))
+        );
+      });
+    } catch (error) {
+      console.log("error-message.get-posts", error.message);
+    }
+  };
+
+  useEffect(() => {
+    getUserPosts();
+  }, []);
 
   useEffect(() => {
     const onChange = () => {
@@ -98,6 +103,23 @@ export const ProfileScreen = ({ navigation }) => {
         source={require("../../assets/images/PhotoBG.jpeg")}
       >
         <FlatList
+          ListEmptyComponent={
+            <View
+              style={{
+                flex: 1,
+                backgroundColor: "#FFFFFF",
+                justifyContent: "center",
+                alignItems: "center",
+                padding: 16,
+                height: 240,
+                width: windowWidth,
+              }}
+            >
+              <Text style={{ ...styles.textUserName, fontSize: 16 }}>
+                No posts yet
+              </Text>
+            </View>
+          }
           ListHeaderComponent={
             <View
               style={{
@@ -114,9 +136,15 @@ export const ProfileScreen = ({ navigation }) => {
               >
                 <Image
                   style={styles.avatarImage}
-                  source={require("../../assets/images/userAvatarLarge.jpg")}
+                  source={{ uri: avatarImage }}
                 />
               </View>
+              <TouchableOpacity
+                style={styles.logoutButton}
+                onPress={() => dispatch(authSignOutUser())}
+              >
+                <Logout />
+              </TouchableOpacity>
               <View
                 style={{
                   ...styles.userTitleWrapper,
@@ -126,22 +154,21 @@ export const ProfileScreen = ({ navigation }) => {
                 <Text
                   style={{ ...styles.userTitle, fontFamily: "RobotoMedium" }}
                 >
-                  Natali Romanova
+                  {login}
                 </Text>
               </View>
             </View>
           }
-          data={posts}
+          data={userPosts}
           renderItem={({ item }) => (
             <View
               style={{
                 ...styles.cardContainer,
                 width: windowWidth,
-               
               }}
             >
               <Image
-                source={item.postImage}
+                source={{ uri: item.photo }}
                 style={{
                   ...styles.cardImage,
                   width: windowWidth - 16 * 2,
@@ -156,7 +183,9 @@ export const ProfileScreen = ({ navigation }) => {
               >
                 {item.title}
               </Text>
-              <View style={{...styles.cardThumb, width: windowWidth - 16 * 2}}>
+              <View
+                style={{ ...styles.cardThumb, width: windowWidth - 16 * 2 }}
+              >
                 <View
                   style={{
                     flexDirection: "row",
@@ -165,19 +194,32 @@ export const ProfileScreen = ({ navigation }) => {
                 >
                   <TouchableOpacity
                     style={styles.cardWrapper}
-                    onPress={() => navigation.navigate("Comments")}
+                    onPress={() =>
+                      navigation.navigate("Comments", {
+                        postId: item.id,
+                        postPhoto: item.photo,
+                        commentsQuantity: item.commentsQuantity,
+                      })
+                    }
                   >
-                    <Image source={{uri: Message}} />
-                    <Text style={styles.cardText}>{item.comments}</Text>
+                    <Message fill={item.commentsQuantity === 0 ? "#BDBDBD" : "#FF6C00"}/>
+                    <Text style={styles.cardText}>{item.commentsQuantity}</Text>
                   </TouchableOpacity>
                   <View style={{ ...styles.cardWrapper, marginLeft: 24 }}>
-                    <Image source={{uri: Like}} />
-                    <Text style={styles.cardText}>{item.likes}</Text>
+                    <Like fill={item.likesQuantity === 0 ? "#BDBDBD" : "#FF6C00"} />
+                    <Text style={styles.cardText}>{item.likesQuantity}</Text>
                   </View>
                 </View>
-                <TouchableOpacity style={styles.cardWrapper} onPress={() => navigation.navigate('Map')}>
-                  <Image source={{uri: Location}} />
-                  <Text style={styles.cardText}>{item.location}</Text>
+                <TouchableOpacity
+                  style={styles.cardWrapper}
+                  onPress={() =>
+                    navigation.navigate("Map", { location: item.location })
+                  }
+                >
+                  <Location />
+                  <Text style={styles.cardText}>
+                    {item.regionName[0].country}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -186,7 +228,6 @@ export const ProfileScreen = ({ navigation }) => {
           contentContainerStyle={{
             flexGrow: 1,
             alignItems: "center",
-
             borderTopLeftRadius: 25,
             borderTopRightRadius: 25,
           }}
@@ -223,6 +264,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#F6F6F6",
     borderRadius: 16,
   },
+  logoutButton: {
+    position: "absolute",
+    top: 22,
+    right: 16,
+  },
   avatarImage: {
     width: "100%",
     height: "100%",
@@ -245,6 +291,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   cardImage: {
+    height: 240,
     resizeMode: "cover",
     borderRadius: 8,
   },

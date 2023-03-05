@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useSelector } from "react-redux";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import {
@@ -12,8 +13,14 @@ import {
   KeyboardAvoidingView,
   Text,
   TouchableOpacity,
-  Dimensions
+  Dimensions,
 } from "react-native";
+
+import uuid from "react-native-uuid";
+
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { collection, addDoc } from "firebase/firestore";
+import { firestore } from "../../firebase/config";
 
 import DownloadPhoto from "../../assets/images/downloadPhoto.svg";
 import Location from "../../assets/images/location.svg";
@@ -36,12 +43,50 @@ export const CreatePostsScreen = ({ route, navigation }) => {
 
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
+  const [regionName, setRegionName] = useState("");
 
   const [isDisabledPublish, setIsDisabledPublish] = useState(true);
   const [isDisabledTrash, setIsDisabledTrash] = useState(true);
 
+  const { userId, login } = useSelector((state) => state.auth);
+
   const titleHandler = (title) => setTitle(title);
-  // const locationHandler = (location) => setLocation(location);
+
+  const uploadPhotoToServer = async () => {
+    try {
+      const response = await fetch(image);
+      const file = await response.blob();
+      const uniquePostId = uuid.v4();
+      const storage = getStorage();
+      const storageRef = ref(storage, `postImage/${uniquePostId}`);
+
+      await uploadBytes(storageRef, file);
+
+      const photoRef = await getDownloadURL(storageRef);
+      return photoRef;
+    } catch (error) {
+      console.log("error-message.upoload-photo", error.message);
+    }
+  };
+
+  const uploadPostToServer = async () => {
+    try {
+      const imageRef = await uploadPhotoToServer();
+      const postRef = await addDoc(collection(firestore, "posts"), {
+        photo: imageRef,
+        title,
+        location,
+        userId,
+        login,
+        regionName,
+        commentsQuantity: 0,
+        likesQuantity: 0,
+        likeStatus: false,
+      });
+    } catch (error) {
+      console.log("error-message.upload-to-server", error.message);
+    }
+  };
 
   const onPublish = () => {
     if (!title.trim() || !location) {
@@ -49,19 +94,13 @@ export const CreatePostsScreen = ({ route, navigation }) => {
       return;
     }
     Alert.alert(`Post successfully created!`);
-    const newPost = {
-      id: Date(),
-      imagePost: image,
-      title: title,
-      location: `${location?.latitude}, ${location?.longitude}`,
-      comments: 50,
-      likes: 200,
-    };
+    uploadPostToServer();
     setImage();
     setTitle("");
     setLocation("");
+    setRegionName("");
     Keyboard.dismiss();
-    navigation.navigate("Posts", { newPost });
+    navigation.navigate("Posts");
   };
 
   const onDelete = () => {
@@ -75,6 +114,8 @@ export const CreatePostsScreen = ({ route, navigation }) => {
     if (route.params) {
       setImage(route.params.photo);
       setLocation(route.params.location);
+      setRegionName(route.params.regionName);
+      console.log(regionName)
     }
   }, [route.params]);
 
@@ -138,8 +179,7 @@ export const CreatePostsScreen = ({ route, navigation }) => {
                     left: (windowWidth - 60 - 16 * 2) / 2,
                   }}
                 >
-                  <Image
-                    source={{uri: DownloadPhoto}}
+                  <DownloadPhoto
                     onPress={() => navigation.navigate("Camera")}
                     opacity={0.3}
                   />
@@ -150,8 +190,7 @@ export const CreatePostsScreen = ({ route, navigation }) => {
                 style={{ ...styles.contentBlock, width: windowWidth - 16 * 2 }}
               >
                 <TouchableOpacity>
-                  <Image
-                    source={{uri: DownloadPhoto}}
+                  <DownloadPhoto
                     onPress={() => navigation.navigate("Camera")}
                   />
                 </TouchableOpacity>
@@ -184,18 +223,13 @@ export const CreatePostsScreen = ({ route, navigation }) => {
                 }}
                 onFocus={() => setIsFocusedLocation(true)}
                 onBlur={() => setIsFocusedLocation(false)}
-                value={
-                  location
-                    ? `${location?.latitude}, ${location?.longitude}`
-                    : ""
-                }
+                value={regionName ? `${regionName[0].city}, ${regionName[0].country}` : ''}
                 textContentType={"location"}
                 placeholder="Location"
                 cursorColor={"#BDBDBD"}
                 placeholderTextColor={"#BDBDBD"}
-                // onChangeText={locationHandler}
               ></TextInput>
-              <Image source={{uri: Location}} style={styles.locationIcon} />
+              <Location style={styles.locationIcon} />
             </View>
             <TouchableOpacity
               style={{
@@ -224,7 +258,7 @@ export const CreatePostsScreen = ({ route, navigation }) => {
               onPress={onDelete}
               disabled={isDisabledTrash}
             >
-              <Image source={{uri: Trash}} stroke={isDisabledTrash ? "#BDBDBD" : "#FFFFFF"} />
+              <Trash stroke={isDisabledTrash ? "#BDBDBD" : "#FFFFFF"} />
             </TouchableOpacity>
           </View>
         </ScrollView>

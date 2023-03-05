@@ -1,7 +1,7 @@
 import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 
-import { HomeScreen } from "../Screens/Home/HomeScreen";
+import { Homescreen } from "../Screens/Home/HomeScreen";
 import { RegistrationScreen } from "../Screens/Auth/RegistrationScreen";
 import { LoginScreen } from "../Screens/Auth/LoginScreen";
 import {CreatePostsScreen} from '../Screens/Posts/CreatePostsScreen';
@@ -18,7 +18,7 @@ export const useRoute = (isLogin) => {
       <MainStack.Screen
         options={{ headerShown: false }}
         name="Home"
-        component={HomeScreen}
+        component={Homescreen}
       ></MainStack.Screen>
       <MainStack.Screen
         options={{

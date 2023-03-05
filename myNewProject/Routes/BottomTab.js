@@ -1,6 +1,9 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { TouchableOpacity, View, Image} from "react-native";
+import { TouchableOpacity, View } from "react-native";
+import { useDispatch } from "react-redux";
+
+import { authSignOutUser } from "../redux/auth/authOperations";
 
 import { PostsScreen } from "../Screens/Posts/PostsScreen";
 import { CreatePostsScreen } from "../Screens/Posts/CreatePostsScreen";
@@ -14,7 +17,8 @@ import Logout from "../assets/images/logout.svg";
 
 const BottomTab = createBottomTabNavigator();
 
-export const BottomTabMenu = ({navigation}) => {
+export const BottomTabMenu = ({ navigation }) => {
+  const dispatch = useDispatch();
   return (
     <BottomTab.Navigator
       screenOptions={{
@@ -56,8 +60,7 @@ export const BottomTabMenu = ({navigation}) => {
                 borderRadius: 20,
               }}
             >
-              <Image
-                source={{uri: Grid}}
+              <Grid
                 size={size}
                 color={color}
                 strokeOpacity={0.8}
@@ -66,8 +69,8 @@ export const BottomTabMenu = ({navigation}) => {
             </View>
           ),
           headerRight: ({ focused, size, color }) => (
-            <TouchableOpacity >
-              <Image source={{uri: Logout}} size={size} color={color} />
+            <TouchableOpacity onPress={() => dispatch(authSignOutUser())}>
+              <Logout size={size} color={color} />
             </TouchableOpacity>
           ),
         }}
@@ -89,8 +92,7 @@ export const BottomTabMenu = ({navigation}) => {
                 borderRadius: 20,
               }}
             >
-              <Image
-                source={{uri: Plus}}
+              <Plus
                 size={size}
                 color={color}
                 fillOpacity={0.8}
@@ -100,7 +102,7 @@ export const BottomTabMenu = ({navigation}) => {
           ),
           headerLeft: ({ focused, size, color }) => (
             <TouchableOpacity onPress={() => navigation.goBack()}>
-              <Image source={{uri: ArrowLeft}} size={size} color={color} />
+              <ArrowLeft size={size} color={color} />
             </TouchableOpacity>
           ),
         }}
@@ -121,14 +123,14 @@ export const BottomTabMenu = ({navigation}) => {
                 borderRadius: 20,
               }}
             >
-              <Image
-                source={{uri: User}}
+              <User
                 size={size}
                 color={color}
                 stroke={focused ? "#FFFFFF" : "#212121"}
               />
             </View>
           ),
+
         }}
       />
     </BottomTab.Navigator>
