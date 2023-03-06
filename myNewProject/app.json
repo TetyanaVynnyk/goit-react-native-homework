@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "myNewProject",
-    "slug": "myNewProject",
+    "slug": "addposts",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -28,6 +28,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "3c1b4d61-1c73-4268-9707-ed06fb5bac09"
+      }
+    },
+    "owner": "kharchenkotanya"
   }
 }
