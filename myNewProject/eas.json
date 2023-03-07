@@ -1,7 +1,25 @@
 {
+  "cli": {
+    "version": ">= 3.1.1"
+  },
   "build": {
-    "addPosts": {
-      "releaseChannel": "release"
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "development"
+    },
+    "preview": {
+      "distribution": "internal",
+      "channel": "preview"
+    },
+    "prod": {
+      "releaseChannel": "prod-v1"
+    },
+    "add-posts": {
+      "releaseChannel": "add-posts"
     }
+  },
+  "submit": {
+    "production": {}
   }
 }
